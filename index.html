@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Library Seat Booking System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #0056cc;
+        }
+
+        .seat {
+            padding: 8px;
+            border: 1px solid #ddd;
+            margin: 4px;
+            border-radius: 5px;
+            display: inline-block;
+            width: 50px;
+            text-align: center;
+        }
+
+        .vacant { background: #ccffcc; cursor: pointer; }
+        .occupied { background: #ffcccc; cursor: not-allowed; }
+
+        input, select {
+            width: 100%; padding: 8px; margin: 5px 0;
+        }
+
+        .back-btn { background: #555; }
+    </style>
+</head>
+<body>
+
+<!-- ================= HOME PAGE ================ -->
+<div class="box" id="homepage">
+    <h2>Library Seat Booking</h2>
+    <p>Total Seats: <span id="totalSeats"></span></p>
+    <p>Occupied Seats: <span id="occupiedSeats"></span></p>
+    <p>Vacant Seats: <span id="vacantSeats"></span></p>
+
+    <button onclick="goToAvailability()">Book Seat</button>
+    <button onclick="openAdminLogin()">Admin Panel</button>
+</div>
+
+<!-- ================= SEAT AVAILABILITY PAGE ================ -->
+<div class="box" id="availability" style="display:none;">
+    <h2>Select a Seat</h2>
+    <div id="seatList"></div>
+    <button class="back-btn" onclick="goHome()">Back</button>
+</div>
+
+<!-- ================= REGISTRATION FORM PAGE ================ -->
+<div class="box" id="formPage" style="display:none;">
+    <h2>Registration Form</h2>
+
+    <p>Selected Seat: <b id="selectedSeat"></b></p>
+
+    <input id="name" placeholder="Your Name">
+    <input id="phone" placeholder="Phone Number">
+    <input id="email" placeholder="Email">
+    <input id="student" placeholder="Student ID (Optional)">
+    <input type="date" id="date">
+    <input id="time" placeholder="10:00 AM – 12:00 PM">
+
+    <button onclick="confirmBooking()">Confirm Booking</button>
+    <button class="back-btn" onclick="goHome()">Cancel</button>
+</div>
+
+<!-- ================= SUCCESS PAGE ================ -->
+<div class="box" id="successPage" style="display:none;">
+    <h2>Booking Successful ✔</h2>
+
+    <p>Your seat number: <b id="sSeat"></b></p>
+    <p>Date: <b id="sDate"></b></p>
+    <p>Time Slot: <b id="sTime"></b></p>
+
+    <h3 style="color:green;">Now you can join the library by paying the fee at the fee counter.</h3>
+
+    <button onclick="goHome()">Back to Home</button>
+</div>
+
+<!-- ================= ADMIN LOGIN PAGE ================ -->
+<div class="box" id="adminLogin" style="display:none;">
+    <h2>Admin Login</h2>
+    <input id="adminUser" placeholder="Username">
+    <input id="adminPass" placeholder="Password" type="password">
+    <button onclick="adminLogin()">Login</button>
+    <button class="back-btn" onclick="goHome()">Back</button>
+</div>
+
+<!-- ================= ADMIN PANEL PAGE ================ -->
+<div class="box" id="adminPanel" style="display:none;">
+    <h2>Admin Panel</h2>
+
+    <button onclick="showSeatControl()">Manage Seats</button>
+    <button onclick="showBookingList()">View Bookings</button>
+    <button class="back-btn" onclick="logoutAdmin()">Logout</button>
+</div>
+
+<!-- ================= MANAGE SEATS ================= -->
+<div class="box" id="seatControl" style="display:none;">
+    <h2>Seat Management</h2>
+
+    <h3>All Seats</h3>
+    <div id="adminSeatList"></div>
+
+    <h3>Add New Seat</h3>
+    <input id="newSeatId" placeholder="Seat ID (e.g., S126)">
+    <button onclick="addSeat()">Add Seat</button>
+
+    <button class="back-btn" onclick="openAdminPanel()">Back</button>
+</div>
+
+<!-- ================= BOOKING LIST ================= -->
+<div class="box" id="bookingList" style="display:none;">
+    <h2>All Bookings</h2>
+    <div id="bookingOutput"></div>
+    <button class="back-btn" onclick="openAdminPanel()">Back</button>
+</div>
+
+<script>
+// ------------------ CREATE 125 DEFAULT SEATS ------------------
+let seats = JSON.parse(localStorage.getItem("seats")) || [];
+
+if (seats.length === 0) {
+    for (let i = 1; i <= 125; i++) {
+        seats.push({ id: "S" + i, status: "vacant" });
+    }
+    saveSeats();
+}
+
+let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+
+function saveSeats() { localStorage.setItem("seats", JSON.stringify(seats)); }
+function saveBookings() { localStorage.setItem("bookings", JSON.stringify(bookings)); }
+
+// -------------- UPDATE HOMEPAGE STATS --------------
+function loadStats() {
+    document.getElementById("totalSeats").innerText = seats.length;
+    document.getElementById("occupiedSeats").innerText = seats.filter(s => s.status === "occupied").length;
+    document.getElementById("vacantSeats").innerText = seats.filter(s => s.status === "vacant").length;
+}
+loadStats();
+
+// -------------- USER BOOKING FLOW -----------------
+
+let chosenSeat = null;
+
+function goToAvailability() {
+    document.getElementById("homepage").style.display = "none";
+    document.getElementById("availability").style.display = "block";
+
+    let div = document.getElementById("seatList");
+    div.innerHTML = "";
+
+    seats.forEach(seat => {
+        let box = document.createElement("div");
+        box.innerText = seat.id;
+        box.className = "seat " + seat.status;
+
+        if (seat.status === "vacant") {
+            box.onclick = () => selectSeat(seat.id);
+        }
+
+        div.appendChild(box);
+    });
+}
+
+function selectSeat(id) {
+    chosenSeat = id;
+    document.getElementById("availability").style.display = "none";
+    document.getElementById("formPage").style.display = "block";
+    document.getElementById("selectedSeat").innerText = id;
+}
+
+function confirmBooking() {
+    let name = document.getElementById("name").value;
+    let phone = document.getElementById("phone").value;
+    let email = document.getElementById("email").value;
+    let student = document.getElementById("student").value;
+    let date = document.getElementById("date").value;
+    let time = document.getElementById("time").value;
+
+    if (!name || !phone || !email || !date || !time) {
+        alert("Please fill all required fields!");
+        return;
+    }
+
+    // Mark seat as occupied
+    let seat = seats.find(s => s.id === chosenSeat);
+    seat.status = "occupied";
+    saveSeats();
+
+    // Store booking
+    bookings.push({
+        name, phone, email, student, date, time, seat: chosenSeat
+    });
+    saveBookings();
+
+    // Show success page
+    document.getElementById("formPage").style.display = "none";
+    document.getElementById("successPage").style.display = "block";
+
+    document.getElementById("sSeat").innerText = chosenSeat;
+    document.getElementById("sDate").innerText = date;
+    document.getElementById("sTime").innerText = time;
+
+    loadStats();
+}
+
+// -------------- ADMIN LOGIN -----------------
+
+function openAdminLogin() {
+    document.getElementById("homepage").style.display = "none";
+    document.getElementById("adminLogin").style.display = "block";
+}
+
+function adminLogin() {
+    let user = document.getElementById("adminUser").value;
+    let pass = document.getElementById("adminPass").value;
+
+    if (user === "admin" && pass === "1234") {
+        openAdminPanel();
+    } else {
+        alert("Incorrect login!");
+    }
+}
+
+function openAdminPanel() {
+    hideAll();
+    document.getElementById("adminPanel").style.display = "block";
+}
+
+function logoutAdmin() {
+    goHome();
+}
+
+// -------------- ADMIN SEAT MANAGEMENT -----------------
+
+function showSeatControl() {
+    hideAll();
+    document.getElementById("seatControl").style.display = "block";
+
+    let div = document.getElementById("adminSeatList");
+    div.innerHTML = "";
+
+    seats.forEach(seat => {
+        let row = document.createElement("div");
+        row.innerHTML = `
+            <b>${seat.id}</b> - ${seat.status.toUpperCase()}
+            <button onclick="markVacant('${seat.id}')">Vacant</button>
+            <button onclick="markOccupied('${seat.id}')">Occupied</button>
+            <button onclick="removeSeat('${seat.id}')">Remove</button>
+        `;
+        div.appendChild(row);
+    });
+}
+
+function markVacant(id) {
+    let seat = seats.find(s => s.id === id);
+    seat.status = "vacant";
+    saveSeats();
+    showSeatControl();
+}
+
+function markOccupied(id) {
+    let seat = seats.find(s => s.id === id);
+    seat.status = "occupied";
+    saveSeats();
+    showSeatControl();
+}
+
+function addSeat() {
+    let id = document.getElementById("newSeatId").value;
+    if (!id) return alert("Enter a seat ID!");
+
+    seats.push({ id, status: "vacant" });
+    saveSeats();
+    showSeatControl();
+}
+
+function removeSeat(id) {
+    seats = seats.filter(s => s.id !== id);
+    saveSeats();
+    showSeatControl();
+}
+
+// -------------- ADMIN BOOKING LIST -----------------
+
+function showBookingList() {
+    hideAll();
+    document.getElementById("bookingList").style.display = "block";
+
+    let div = document.getElementById("bookingOutput");
+    div.innerHTML = "";
+
+    bookings.forEach(b => {
+        div.innerHTML += `
+            <div style="margin-bottom:10px; padding:10px; border:1px solid #ddd;">
+                <b>${b.name}</b><br>
+                Seat: ${b.seat}<br>
+                Phone: ${b.phone}<br>
+                Email: ${b.email}<br>
+                Date: ${b.date}<br>
+                Time: ${b.time}<br>
+                Student ID: ${b.student || "N/A"}
+            </div>
+        `;
+    });
+}
+
+// -------------- UTILITIES -----------------
+
+function hideAll() {
+    document.querySelectorAll(".box").forEach(b => b.style.display = "none");
+}
+
+function goHome() {
+    hideAll();
+    document.getElementById("homepage").style.display = "block";
+    loadStats();
+}
+</script>
+
+</body>
+</html>
