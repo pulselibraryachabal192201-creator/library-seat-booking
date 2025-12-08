@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pulse Library</title>
+    
+    <!-- QR Code Generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #fafafa;
+            color: #333;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 900px;
+            margin: auto;
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+        }
+
+        h2 { color: #005bff; }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #005bff;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover { background: #0041c4; }
+
+        .seat {
+            padding: 8px;
+            border: 1px solid #ddd;
+            margin: 4px;
+            border-radius: 5px;
+            display: inline-block;
+            width: 50px;
+            text-align: center;
+        }
+
+        .vacant { background: #ccffcc; cursor: pointer; }
+        .occupied { background: #ffb3b3; }
+        .pending { background: #ffe6a3; }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        .back-btn { background: #555; }
+
+        /* Receipt Popup */
+        #receiptPopup {
+            display:none;
+            position:fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            background:rgba(0,0,0,0.6);
+            padding-top:40px;
+            z-index:9999;
+        }
+        #receiptBox {
+            background:white;
+            width:350px;
+            margin:auto;
+            padding:20px;
+            border-radius:12px;
+            text-align:center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ================= HOME PAGE ================= -->
+<div class="box" id="homepage">
+
+    <!-- HIGH QUALITY LOGO -->
+    <div style="text-align:center;">
+        <svg width="160" height="160" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="92" stroke="#333" stroke-width="4" fill="white"/>
+            <path d="M60 70 C45 65, 45 95, 60 90 L95 112 L95 50 Z" fill="#393939"/>
+            <path d="M140 70 C155 65, 155 95, 140 90 L105 112 L105 50 Z" fill="#393939"/>
+            <line x1="100" y1="48" x2="100" y2="118" stroke="white" stroke-width="4" />
+            <circle cx="55" cy="72" r="3" fill="#393939"/>
+            <circle cx="48" cy="80" r="3" fill="#393939"/>
+            <circle cx="53" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="44" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="58" cy="96" r="2.6" fill="#393939"/>
+            <circle cx="145" cy="72" r="3" fill="#393939"/>
+            <circle cx="152" cy="80" r="3" fill="#393939"/>
+            <circle cx="147" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="156" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="142" cy="96" r="2.6" fill="#393939"/>
+            <line x1="38" y1="122" x2="162" y2="122" stroke="#333" stroke-width="4"/>
+            <text x="100" y="148" font-size="18" font-family="Arial Black" text-anchor="middle" fill="#333">
+                PULSE LIBRARY
+            </text>
+            <text x="100" y="170" font-size="22" text-anchor="middle" fill="#333">★ ★ ★</text>
+        </svg>
+    </div>
+
+    <h2>Pulse Library</h2>
+
+    <p><b>Total Seats:</b> <span id="totalSeats"></span></p>
+    <p><b>Occupied Seats:</b> <span id="occupiedSeats"></span></p>
+    <p><b>Pending Approval:</b> <span id="pendingSeats"></span></p>
+    <p><b>Vacant Seats:</b> <span id="vacantSeats"></span></p>
+
+    <button onclick="goToAvailability()">Book Seat</button>
+    <button onclick="openAdminLogin()">Admin Panel</button>
+
+    <hr><br>
+
+    <h3>About Pulse Library</h3>
+    <p style="text-align:justify;">
+        A Library That Unlocks Every Door to Knowledge, Inspires Every Dream, Shapes Bright Futures,
+        Empowers Young Minds, Builds Confidence, Encourages Curiosity, Guides Learners Toward Excellence,
+        Opens Pathways to Growth, Strengthens Imagination, Creates Leaders, Transforms Hard Work Into Achievement,
+        Offers Wisdom at Every Step, Lights the Way to Possibilities, Supports Every Goal, Turns Questions Into Solutions,
+        Nurtures Talent, Expands Horizons, Enriches Understanding, Connects Students With Opportunities, Fuels Determination,
+        Plants the Seeds of Greatness, Develops Skills for Life, Encourages Independent Learning, Provides a Peaceful Place
+        to Study, Motivates Readers to Aim Higher, Builds Strong Foundations for Success, Makes Learning Enjoyable, Cultivates
+        Good Habits, Helps Students Discover Their Potential, Enhances Creativity, Boosts Academic Performance, Brings Knowledge
+        Closer to Everyone, Promotes Discipline, Guides Ambition in the Right Direction, Inspires Students to Work Hard, Offers
+        Unlimited Learning Resources, Makes Learning Enjoyable, Builds Focus, Sparks Ideas, and Strengthens Memory.
+    </p>
+
+    <hr>
+    <h3>Contact</h3>
+    <p><b>+91 8803586121</b></p>
+    <p><b>+91 9797033586</b></p>
+</div>
+
+<!-- ================= SEAT AVAILABILITY ================= -->
+<div class="box" id="availability" style="display:none;">
+    <h2>Select a Seat</h2>
+    <div id="seatList"></div>
+    <button class="back-btn" onclick="goHome()">Back</button>
+</div>
+
+<!-- ================= FORM PAGE ================= -->
+<div class="box" id="formPage" style="display:none;">
+    <h2>Seat Booking Form</h2>
+    <p><b>Selected Seat:</b> <span id="selectedSeat"></span></p>
+
+    <input id="name" placeholder="Your Name">
+    <input id="phone" placeholder="Phone Number">
+    <input id="email" placeholder="Email">
+    <input id="student" placeholder="Student ID (Optional)">
+    <input type="date" id="date">
+    <input id="time" placeholder="10:00 AM – 12:00 PM">
+
+    <button onclick="confirmBooking()">Submit Request</button>
+    <button class="back-btn" onclick="goHome()">Cancel</button>
+</div>
+
+<!-- ================= SUCCESS PAGE ================= -->
+<div class="box" id="successPage" style="display:none;">
+    <h2>Request Submitted ✔</h2>
+    <p>Your Seat: <b id="sSeat"></b></p>
+    <p>Date: <b id="sDate"></b></p>
+    <p>Time Slot: <b id="sTime"></b></p>
+
+    <h3 style="color:blue;">Your request is pending admin approval.</h3>
+    <h3 style="color:green;">After approval, pay fee at the fee counter.</h3>
+
+    <button onclick="goHome()">Done</button>
+</div>
+
+<!-- ================= ADMIN LOGIN ================= -->
+<div class="box" id="adminLogin" style="display:none;">
+    <h2>Admin Login</h2>
+    <input id="adminUser" placeholder="Admin Name">
+    <input id="adminPass" placeholder="Password" type="password">
+    <button onclick="adminLogin()">Login</button>
+    <button class="back-btn" onclick="goHome()">Back</button>
+</div>
+
+<!-- ================= ADMIN PANEL ================= -->
+<div class="box" id="adminPanel" style="display:none;">
+
+    <!-- LOGO INSIDE ADMIN PANEL -->
+    <div style="text-align:center;">
+        <svg width="130" height="130" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="92" stroke="#333" stroke-width="4" fill="white"/>
+            <path d="M60 70 C45 65, 45 95, 60 90 L95 112 L95 50 Z" fill="#393939"/>
+            <path d="M140 70 C155 65, 155 95, 140 90 L105 112 L105 50 Z" fill="#393939"/>
+            <line x1="100" y1="48" x2="100" y2="118" stroke="white" stroke-width="4" />
+            <circle cx="55" cy="72" r="3" fill="#393939"/>
+            <circle cx="48" cy="80" r="3" fill="#393939"/>
+            <circle cx="53" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="44" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="58" cy="96" r="2.6" fill="#393939"/>
+            <circle cx="145" cy="72" r="3" fill="#393939"/>
+            <circle cx="152" cy="80" r="3" fill="#393939"/>
+            <circle cx="147" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="156" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="142" cy="96" r="2.6" fill="#393939"/>
+            <line x1="38" y1="122" x2="162" y2="122" stroke="#333" stroke-width="4"/>
+            <text x="100" y="148" font-size="18" font-family="Arial Black" text-anchor="middle" fill="#333">
+                PULSE LIBRARY
+            </text>
+            <text x="100" y="170" font-size="22" text-anchor="middle" fill="#333">★ ★ ★</text>
+        </svg>
+    </div>
+
+    <h2>Admin Panel</h2>
+    <button onclick="showPending()">Pending Requests</button>
+    <button onclick="showBookings()">All Bookings</button>
+    <button onclick="logoutAdmin()">Logout</button>
+</div>
+
+<!-- ================= PENDING REQUEST LIST ================= -->
+<div class="box" id="pendingPage" style="display:none;">
+    <h2>Pending Bookings</h2>
+    <div id="pendingList"></div>
+    <button class="back-btn" onclick="openAdminPanel()">Back</button>
+</div>
+
+<!-- ================= ALL BOOKINGS LIST ================= -->
+<div class="box" id="bookingPage" style="display:none;">
+    <h2>All Bookings</h2>
+    <div id="bookingListDiv"></div>
+    <button class="back-btn" onclick="openAdminPanel()">Back</button>
+</div>
+
+<!-- ================= RECEIPT POPUP ================= -->
+<div id="receiptPopup">
+    <div id="receiptBox">
+
+        <!-- Logo -->
+        <svg width="120" height="120" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="92" stroke="#333" stroke-width="4" fill="white"/>
+            <path d="M60 70 C45 65, 45 95, 60 90 L95 112 L95 50 Z" fill="#393939"/>
+            <path d="M140 70 C155 65, 155 95, 140 90 L105 112 L105 50 Z" fill="#393939"/>
+            <line x1="100" y1="48" x2="100" y2="118" stroke="white" stroke-width="4" />
+            <circle cx="55" cy="72" r="3" fill="#393939"/>
+            <circle cx="48" cy="80" r="3" fill="#393939"/>
+            <circle cx="53" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="44" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="58" cy="96" r="2.6" fill="#393939"/>
+            <circle cx="145" cy="72" r="3" fill="#393939"/>
+            <circle cx="152" cy="80" r="3" fill="#393939"/>
+            <circle cx="147" cy="88" r="2.6" fill="#393939"/>
+            <circle cx="156" cy="92" r="2.4" fill="#393939"/>
+            <circle cx="142" cy="96" r="2.6" fill="#393939"/>
+            <line x1="38" y1="122" x2="162" y1="122" stroke="#333" stroke-width="4"/>
+            <text x="100" y="148" font-size="18" text-anchor="middle" fill="#333">
+                PULSE LIBRARY
+            </text>
+            <text x="100" y="170" font-size="22" text-anchor="middle" fill="#333">★ ★ ★</text>
+        </svg>
+
+        <h3>Booking Receipt</h3>
+
+        <p><b>Name:</b> <span id="rName"></span></p>
+        <p><b>Seat:</b> <span id="rSeat"></span></p>
+        <p><b>Date:</b> <span id="rDate"></span></p>
+        <p><b>Time:</b> <span id="rTime"></span></p>
+
+        <br>
+
+        <canvas id="qrCode"></canvas>
+
+        <br><br>
+
+        <button onclick="window.print()">Print</button>
+        <button class="back-btn" onclick="closeReceipt()">Close</button>
+    </div>
+</div>
+
+<script>
+/* ---------------- INITIALIZE SEATS ---------------- */
+let seats = JSON.parse(localStorage.getItem("seats")) || [];
+let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+
+if (seats.length === 0) {
+    for (let i = 1; i <= 125; i++) {
+        seats.push({ id: "S" + i, status: "vacant" });
+    }
+    saveSeats();
+}
+
+function saveSeats() { localStorage.setItem("seats", JSON.stringify(seats)); }
+function saveBookings() { localStorage.setItem("bookings", JSON.stringify(bookings)); }
+
+function loadStats() {
+    document.getElementById("totalSeats").innerText = seats.length;
+    document.getElementById("occupiedSeats").innerText = seats.filter(s => s.status === "occupied").length;
+    document.getElementById("pendingSeats").innerText = seats.filter(s => s.status === "pending").length;
+    document.getElementById("vacantSeats").innerText = seats.filter(s => s.status === "vacant").length;
+}
+loadStats();
+
+/* ---------------- USER BOOKING ---------------- */
+let chosenSeat = null;
+
+function goToAvailability() {
+    hideAll();
+    availability.style.display = "block";
+
+    let div = seatList;
+    div.innerHTML = "";
+
+    seats.forEach(seat => {
+        let box = document.createElement("div");
+        box.innerText = seat.id;
+        box.className = "seat " + seat.status;
+
+        if (seat.status === "vacant")
+            box.onclick = () => selectSeat(seat.id);
+
+        div.appendChild(box);
+    });
+}
+
+function selectSeat(id) {
+    chosenSeat = id;
+    hideAll();
+    formPage.style.display = "block";
+    selectedSeat.innerText = id;
+}
+
+function confirmBooking() {
+    let seat = seats.find(s => s.id === chosenSeat);
+    seat.status = "pending";
+    saveSeats();
+
+    bookings.push({
+        name: name.value,
+        phone: phone.value,
+        email: email.value,
+        student: student.value,
+        date: date.value,
+        time: time.value,
+        seat: chosenSeat,
+        status: "pending"
+    });
+
+    saveBookings();
+
+    sSeat.innerText = chosenSeat;
+    sDate.innerText = date.value;
+    sTime.innerText = time.value;
+
+    hideAll();
+    successPage.style.display = "block";
+    loadStats();
+}
+
+/* ---------------- ADMIN LOGIN ---------------- */
+function openAdminLogin() {
+    hideAll();
+    adminLogin.style.display = "block";
+}
+
+function adminLogin() {
+    if (adminUser.value === "PL" && adminPass.value === "192201") {
+        openAdminPanel();
+    } else {
+        alert("Incorrect admin login!");
+    }
+}
+
+function openAdminPanel() {
+    hideAll();
+    adminPanel.style.display = "block";
+}
+
+function logoutAdmin() {
+    goHome();
+}
+
+/* ---------------- PENDING REQUESTS ---------------- */
+function showPending() {
+    hideAll();
+    pendingPage.style.display = "block";
+
+    let div = pendingList;
+    div.innerHTML = "";
+
+    bookings.filter(b => b.status === "pending").forEach(b => {
+        div.innerHTML += `
+            <div style="padding:10px; border:1px solid #ccc; margin:10px;">
+                <b>${b.name}</b><br>
+                Seat: ${b.seat}<br>
+                Date: ${b.date}<br>
+                Time: ${b.time}<br>
+                Phone: ${b.phone}<br><br>
+                <button onclick="approveBooking('${b.seat}')">Approve</button>
+                <button onclick="rejectBooking('${b.seat}')" style="background:#d00;">Reject</button>
+            </div>
+        `;
+    });
+}
+
+function approveBooking(seatId) {
+    let booking = bookings.find(b => b.seat === seatId && b.status === "pending");
+    let seat = seats.find(s => s.id === seatId);
+
+    booking.status = "approved";
+    seat.status = "occupied";
+
+    saveBookings();
+    saveSeats();
+
+    alert("Your request has been successfully approved. You will be called soon.");
+
+    showReceipt(booking);
+    showPending();
+}
+
+function rejectBooking(seatId) {
+    let booking = bookings.find(b => b.seat === seatId && b.status === "pending");
+    let seat = seats.find(s => s.id === seatId);
+
+    booking.status = "rejected";
+    seat.status = "vacant";
+
+    saveBookings();
+    saveSeats();
+
+    showPending();
+}
+
+/* ---------------- ALL BOOKINGS ---------------- */
+function showBookings() {
+    hideAll();
+    bookingPage.style.display = "block";
+
+    let div = bookingListDiv;
+    div.innerHTML = "";
+
+    bookings.forEach(b => {
+        div.innerHTML += `
+            <div style="padding:10px; border:1px solid #ddd; margin:10px;">
+                <b>${b.name}</b><br>
+                Seat: ${b.seat}<br>
+                Status: ${b.status}<br>
+                Date: ${b.date}<br>
+                Time: ${b.time}<br>
+                Phone: ${b.phone}<br>
+            </div>
+        `;
+    });
+}
+
+/* ---------------- RECEIPT + QR ---------------- */
+function showReceipt(b) {
+    rName.innerText = b.name;
+    rSeat.innerText = b.seat;
+    rDate.innerText = b.date;
+    rTime.innerText = b.time;
+
+    let qr = new QRious({
+        element: document.getElementById("qrCode"),
+        size: 180,
+        value: `Pulse Library Booking:
+Name: ${b.name}
+Seat: ${b.seat}
+Date: ${b.date}
+Time: ${b.time}`
+    });
+
+    receiptPopup.style.display = "block";
+}
+
+function closeReceipt() {
+    receiptPopup.style.display = "none";
+}
+
+/* ---------------- UTIL ---------------- */
+function hideAll() {
+    document.querySelectorAll(".box").forEach(b => b.style.display = "none");
+}
+
+function goHome() {
+    hideAll();
+    homepage.style.display = "block";
+    loadStats();
+}
+</script>
+
+</body>
+</html>
